@@ -1,10 +1,12 @@
 package com.mk.orderbooks.controller;
 
 import com.mk.orderbooks.controller.request.NewOrderBookRequest;
+import com.mk.orderbooks.controller.request.NewOrderRequest;
 import com.mk.orderbooks.hateoas.OrderBookResource;
 import com.mk.orderbooks.hateoas.OrderBooksResource;
+import com.mk.orderbooks.hateoas.OrderResource;
+import com.mk.orderbooks.hateoas.OrdersResource;
 import com.mk.orderbooks.service.MarketService;
-import com.mk.orderbooks.service.Messages;
 import io.swagger.annotations.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +23,9 @@ import static org.springframework.http.ResponseEntity.ok;
 public class OrderBookController {
 
     private final MarketService marketService;
-    private final Messages messages;
 
-    public OrderBookController(MarketService marketService, Messages messages) {
+    public OrderBookController(MarketService marketService) {
         this.marketService = marketService;
-        this.messages = messages;
     }
 
     @GetMapping()
@@ -44,7 +44,7 @@ public class OrderBookController {
     @ApiOperation(
             value = "Finds one Order Book by id",
             response = OrderBookResource.class,
-            notes = "It fetches a single order book or throws 404 if not found")
+            notes = "It fetches a single order book.")
     @ApiResponses(value = {
             @ApiResponse(code = 404, message = "Resource not found!")})
     public OrderBookResource getOrderBook(
@@ -75,10 +75,51 @@ public class OrderBookController {
             @ApiResponse(code = 201, message = "Created", response = OrderBooksResource.class),
             @ApiResponse(code = 400, message = "Request malformed or not consistent. Check your request body!")})
     public ResponseEntity<OrderBookResource> openOrderBook(
-            @ApiParam(value = "Unique ID of an order book", required = true)
+            @ApiParam(value = "New order book data", required = true)
             @RequestBody NewOrderBookRequest newOrderBookRequest) throws URISyntaxException {
         OrderBookResource orderBookResource = new OrderBookResource(marketService.openOrderBook(newOrderBookRequest.getFinancialInstrument()));
         return ResponseEntity.created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
     }
+
+    @GetMapping(value = "/{orderBookId}/orders")
+    @ApiOperation(
+            value = "Finds list of all orders for given book")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "Resource not found!")})
+    public OrdersResource getOrders(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId) {
+        return new OrdersResource(orderBookId, marketService.getOrdersByOrderBookId(orderBookId));
+    }
+
+    @GetMapping(value = "/{orderBookId}/orders/{orderId}")
+    @ApiOperation(
+            value = "Finds particular order for given order book")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "Resource not found!")})
+    public OrderResource getOrder(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId,
+            @ApiParam(value = "Unique ID of an order ", required = true)
+            @PathVariable String orderId) {
+        return new OrderResource(orderBookId, marketService.getOrderByOrderBookIdAndOrderId(orderBookId, orderId));
+    }
+
+    @PostMapping(value = "/{orderBookId}/orders")
+    @ApiOperation(
+            value = "Adds new order to the order book",
+            notes = "New order can be added to open order book only.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Created", response = NewOrderRequest.class),
+            @ApiResponse(code = 412, message = "This order book is closed!")})
+    public ResponseEntity<OrderResource> addOrder(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId,
+            @ApiParam(value = "New order data", required = true)
+            @RequestBody NewOrderRequest newOrderRequest) throws URISyntaxException {
+        OrderResource orderBookResource = new OrderResource(orderBookId, marketService.addOrder(orderBookId, newOrderRequest.getQuantity(), newOrderRequest.getPrice()));
+        return ResponseEntity.created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
+    }
+
 
 }

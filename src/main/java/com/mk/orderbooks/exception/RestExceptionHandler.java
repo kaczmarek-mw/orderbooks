@@ -1,18 +1,15 @@
 package com.mk.orderbooks.exception;
 
-import com.mk.orderbooks.junk.MessageKeys;
 import com.mk.orderbooks.service.Messages;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.net.URISyntaxException;
 import java.util.NoSuchElementException;
 
 import static com.mk.orderbooks.junk.MessageKeys.*;
@@ -28,7 +25,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(NoSuchElementException.class)
-    protected ResponseEntity<Object> resourceNotFoundException(
+    protected ResponseEntity<Object> handleResourceNotFoundException(
             NoSuchElementException ex, WebRequest request) {
         return handleExceptionInternal(ex, messages.getMessage(ERROR_NOT_FOUND), new HttpHeaders(), NOT_FOUND, request);
     }
@@ -38,6 +35,12 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, messages.getMessage(ERROR_REQUEST_NOT_CONSISTENT), new HttpHeaders(), BAD_REQUEST, request);
     }
 
+
+    @ExceptionHandler(IllegalStateException.class)
+    protected ResponseEntity<Object> handleIllegalStateException(
+            IllegalStateException ex, WebRequest request) {
+        return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), PRECONDITION_FAILED, request);
+    }
 
     @ExceptionHandler(Exception.class)
     protected ResponseEntity<Object> unhandledException(

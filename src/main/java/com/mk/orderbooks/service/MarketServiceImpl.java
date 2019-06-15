@@ -1,65 +1,44 @@
 package com.mk.orderbooks.service;
 
 import com.mk.orderbooks.domain.FinancialInstrument;
-import com.mk.orderbooks.domain.Market;
 import com.mk.orderbooks.domain.Order;
 import com.mk.orderbooks.domain.OrderBook;
-import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 
-import static java.math.BigDecimal.TEN;
+import static com.mk.orderbooks.junk.MessageKeys.ERROR_ORDER_BOOK_IS_CLOSED;
 import static java.time.Instant.now;
-import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
 
 @Service
 public class MarketServiceImpl implements MarketService {
 
-    private Market market;
+    private MarketRepository marketRepository;
+    private final Messages messages;
 
-    public MarketServiceImpl() {
-        init();
-    }
-
-    private void init() {
-        market = Market.builder()
-                .orderBooks(new CopyOnWriteArrayList<>(
-                        asList(OrderBook.builder()
-                                .id(randomUUID().toString())
-                                .isOpen(true)
-                                .financialInstrument(FinancialInstrument.BTC)
-                                .orders(new ConcurrentLinkedQueue<>(asList(Order.builder()
-                                        .id(randomUUID().toString())
-                                        .price(TEN)
-                                        .quantity(5)
-                                        .entryTime(now())
-                                        .build()))
-                                )
-                                .build()
-                        )))
-                .build();
+    public MarketServiceImpl(MarketRepository marketRepository, Messages messages) {
+        this.marketRepository = marketRepository;
+        this.messages = messages;
     }
 
     @Override
     public List<OrderBook> getOrderBooks() {
-        return market.getOrderBooks();
+        return marketRepository.findAllOrderBooks();
     }
 
     @Override
     public OrderBook getOrderBookById(String id) {
-        return market.getOrderBooks().stream().filter(orderBook -> StringUtils.equals(id, orderBook.getId())).findFirst().get();
+        return marketRepository.findOrderBookById(id).get();
     }
 
     @Override
     public OrderBook closeOrderBook(String id) {
-        Optional<OrderBook> maybeOrderBook = market.getOrderBooks().stream().filter(orderBook -> StringUtils.equals(id, orderBook.getId())).findFirst();
+        Optional<OrderBook> maybeOrderBook = marketRepository.findOrderBookById(id);
         if (maybeOrderBook.isPresent()) {
             maybeOrderBook.get().setOpen(false);
             return maybeOrderBook.get();
@@ -74,8 +53,48 @@ public class MarketServiceImpl implements MarketService {
                 .financialInstrument(financialInstrument)
                 .isOpen(true)
                 .build();
-        market.getOrderBooks().add(newOrderBook);
+        marketRepository.addOrderBook(newOrderBook);
         return newOrderBook;
     }
+
+    @Override
+    public Order addOrder(String orderBookId, int quantity, BigDecimal price) {
+        Optional<OrderBook> maybeOrderBook = marketRepository.findOrderBookById(orderBookId);
+        if (maybeOrderBook.isPresent()) {
+            OrderBook orderBook = maybeOrderBook.get();
+            if (orderBook.isOpen()) {
+                Order order = Order.builder()
+                        .id(randomUUID().toString())
+                        .price(price)
+                        .quantity(quantity)
+                        .entryTime(now())
+                        .build();
+                marketRepository.addOrder(orderBook.getId(), order);
+                return order;
+            } else {
+                throw new IllegalStateException(messages.getMessage(ERROR_ORDER_BOOK_IS_CLOSED));
+            }
+        }
+        throw new NoSuchElementException();
+    }
+
+    @Override
+    public Collection<Order> getOrdersByOrderBookId(String orderBookId) {
+        Optional<OrderBook> maybeOrderBook = marketRepository.findOrderBookById(orderBookId);
+        if (maybeOrderBook.isPresent()) {
+            return maybeOrderBook.get().getOrders();
+        }
+        throw new NoSuchElementException();
+    }
+
+    @Override
+    public Order getOrderByOrderBookIdAndOrderId(String orderBookId, String orderId) {
+        Optional<Order> maybeOrder = marketRepository.findOrderByOrderBookByIdAndOrderId(orderBookId, orderId);
+        if (maybeOrder.isPresent()) {
+            return maybeOrder.get();
+        }
+        throw new NoSuchElementException();
+    }
+
 
 }
