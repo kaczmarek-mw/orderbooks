@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -76,7 +77,7 @@ public class OrderBookController {
             @ApiResponse(code = 400, message = "Request malformed or not consistent. Check your request body!")})
     public ResponseEntity<OrderBookResource> openOrderBook(
             @ApiParam(value = "New order book data", required = true)
-            @RequestBody NewOrderBookRequest newOrderBookRequest) throws URISyntaxException {
+            @Valid @RequestBody NewOrderBookRequest newOrderBookRequest) throws URISyntaxException {
         OrderBookResource orderBookResource = new OrderBookResource(marketService.openOrderBook(newOrderBookRequest.getFinancialInstrument()));
         return ResponseEntity.created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
     }
@@ -116,8 +117,13 @@ public class OrderBookController {
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String orderBookId,
             @ApiParam(value = "New order data", required = true)
-            @RequestBody NewOrderRequest newOrderRequest) throws URISyntaxException {
-        OrderResource orderBookResource = new OrderResource(orderBookId, marketService.addOrder(orderBookId, newOrderRequest.getQuantity(), newOrderRequest.getPrice()));
+            @Valid @RequestBody NewOrderRequest newOrderRequest) throws URISyntaxException {
+        OrderResource orderBookResource = new OrderResource(orderBookId,
+                marketService.addOrder(
+                        orderBookId,
+                        newOrderRequest.getQuantity(),
+                        newOrderRequest.isMarketOrder(),
+                        newOrderRequest.getPrice()));
         return ResponseEntity.created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
     }
 

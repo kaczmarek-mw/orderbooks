@@ -5,12 +5,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import static com.mk.orderbooks.junk.MessageKeys.*;
 import static org.springframework.http.HttpStatus.*;
@@ -35,6 +37,11 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, messages.getMessage(ERROR_REQUEST_NOT_CONSISTENT), new HttpHeaders(), BAD_REQUEST, request);
     }
 
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
+        String message = ex.getBindingResult().getAllErrors().stream().map(error -> error.getDefaultMessage()).collect(Collectors.joining(" - "));
+        return handleExceptionInternal(ex, message, new HttpHeaders(), BAD_REQUEST, request);
+    }
 
     @ExceptionHandler(IllegalStateException.class)
     protected ResponseEntity<Object> handleIllegalStateException(

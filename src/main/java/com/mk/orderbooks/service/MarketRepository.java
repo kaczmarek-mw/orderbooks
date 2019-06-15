@@ -36,6 +36,7 @@ public class MarketRepository {
                                 .financialInstrument(FinancialInstrument.BTC)
                                 .orders(new ConcurrentLinkedQueue<>(asList(Order.builder()
                                         .id(randomUUID().toString())
+                                        .isMarketOrder(false)
                                         .price(TEN)
                                         .quantity(5)
                                         .entryTime(now())

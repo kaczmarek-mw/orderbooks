@@ -13,6 +13,7 @@ public class Order {
     private final String id;
     private final int quantity;
     private final Instant entryTime;
+    private final boolean isMarketOrder;
     private final BigDecimal price;
 
 }

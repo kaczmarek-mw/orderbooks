@@ -17,7 +17,7 @@ public interface MarketService {
 
     OrderBook openOrderBook(FinancialInstrument financialInstrument);
 
-    Order addOrder(String orderBookId, int quantity, BigDecimal price);
+    Order addOrder(String orderBookId, int quantity, boolean isMarketOrder, BigDecimal price);
 
     Collection<Order> getOrdersByOrderBookId(String orderBookId);
 

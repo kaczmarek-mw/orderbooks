@@ -58,7 +58,7 @@ public class MarketServiceImpl implements MarketService {
     }
 
     @Override
-    public Order addOrder(String orderBookId, int quantity, BigDecimal price) {
+    public Order addOrder(String orderBookId, int quantity, boolean isMarketOrder, BigDecimal price) {
         Optional<OrderBook> maybeOrderBook = marketRepository.findOrderBookById(orderBookId);
         if (maybeOrderBook.isPresent()) {
             OrderBook orderBook = maybeOrderBook.get();
@@ -66,6 +66,7 @@ public class MarketServiceImpl implements MarketService {
                 Order order = Order.builder()
                         .id(randomUUID().toString())
                         .price(price)
+                        .isMarketOrder(isMarketOrder)
                         .quantity(quantity)
                         .entryTime(now())
                         .build();
