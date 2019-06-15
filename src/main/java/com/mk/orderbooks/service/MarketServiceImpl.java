@@ -58,18 +58,24 @@ public class MarketServiceImpl implements MarketService {
     }
 
     @Override
-    public boolean closeOrderBook(String id) {
+    public OrderBook closeOrderBook(String id) {
         Optional<OrderBook> maybeOrderBook = market.getOrderBooks().stream().filter(orderBook -> StringUtils.equals(id, orderBook.getId())).findFirst();
-        if(maybeOrderBook.isPresent()) {
-            OrderBook orderBook = maybeOrderBook.get();
-            if(orderBook.isOpen()) {
-                maybeOrderBook.get().setOpen(false);
-                return true;
-            } else {
-                return false;
-            }
+        if (maybeOrderBook.isPresent()) {
+            maybeOrderBook.get().setOpen(false);
+            return maybeOrderBook.get();
         }
         throw new NoSuchElementException();
+    }
+
+    @Override
+    public OrderBook openOrderBook(FinancialInstrument financialInstrument) {
+        OrderBook newOrderBook = OrderBook.builder()
+                .id(randomUUID().toString())
+                .financialInstrument(financialInstrument)
+                .isOpen(true)
+                .build();
+        market.getOrderBooks().add(newOrderBook);
+        return newOrderBook;
     }
 
 }

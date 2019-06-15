@@ -1,5 +1,6 @@
 package com.mk.orderbooks.controller;
 
+import com.mk.orderbooks.controller.request.NewOrderBookRequest;
 import com.mk.orderbooks.hateoas.OrderBookResource;
 import com.mk.orderbooks.hateoas.OrderBooksResource;
 import com.mk.orderbooks.service.MarketService;
@@ -9,8 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import static com.mk.orderbooks.junk.MessageKeys.MESSAGE_RESOURCE_NOT_UPDATED;
-import static com.mk.orderbooks.junk.MessageKeys.MESSAGE_RESOURCE_UPDATED;
+import java.net.URI;
+import java.net.URISyntaxException;
+
 import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
@@ -33,8 +35,6 @@ public class OrderBookController {
             responseContainer = "List",
             notes = "It fetches both open and closed books")
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "security not implemented"),
-            @ApiResponse(code = 403, message = "security not implemented"),
             @ApiResponse(code = 404, message = "security not implemented")})
     public OrderBooksResource getOrderBooks() {
         return new OrderBooksResource(marketService.getOrderBooks());
@@ -46,8 +46,6 @@ public class OrderBookController {
             response = OrderBookResource.class,
             notes = "It fetches a single order book or throws 404 if not found")
     @ApiResponses(value = {
-            @ApiResponse(code = 401, message = "security not implemented"),
-            @ApiResponse(code = 403, message = "security not implemented"),
             @ApiResponse(code = 404, message = "Resource not found!")})
     public OrderBookResource getOrderBook(
             @ApiParam(value = "Unique ID of an order book", required = true)
@@ -60,17 +58,27 @@ public class OrderBookController {
             value = "Closes an order book",
             notes = "Closes given order book after which executions will be accepted.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Resource was updated || Resource was not updated"),
-            @ApiResponse(code = 401, message = "security not implemented"),
-            @ApiResponse(code = 403, message = "security not implemented"),
+            @ApiResponse(code = 200, message = "OK"),
             @ApiResponse(code = 404, message = "Resource not found!")})
-    public ResponseEntity<String> closeOrderBook(
+    public ResponseEntity<OrderBookResource> closeOrderBook(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String id) {
-        boolean closeResult = marketService.closeOrderBook(id);
-        return ok().body(
-                closeResult ? messages.getMessage(MESSAGE_RESOURCE_UPDATED) : messages.getMessage(MESSAGE_RESOURCE_NOT_UPDATED));
+        OrderBookResource orderBookResource = new OrderBookResource(marketService.closeOrderBook(id));
+        return ok().body(orderBookResource);
     }
 
+    @PostMapping
+    @ApiOperation(
+            value = "Opens a new order book",
+            notes = "Opens new order book for a particular financial instrument")
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Created", response = OrderBooksResource.class),
+            @ApiResponse(code = 400, message = "Request malformed or not consistent. Check your request body!")})
+    public ResponseEntity<OrderBookResource> openOrderBook(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @RequestBody NewOrderBookRequest newOrderBookRequest) throws URISyntaxException {
+        OrderBookResource orderBookResource = new OrderBookResource(marketService.openOrderBook(newOrderBookRequest.getFinancialInstrument()));
+        return ResponseEntity.created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
+    }
 
 }
