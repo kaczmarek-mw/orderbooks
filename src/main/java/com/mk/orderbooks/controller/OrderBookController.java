@@ -1,6 +1,7 @@
 package com.mk.orderbooks.controller;
 
-import com.mk.orderbooks.domain.OrderBook;
+import com.mk.orderbooks.hateoas.OrderBookResource;
+import com.mk.orderbooks.hateoas.OrderBooksResource;
 import com.mk.orderbooks.service.MarketService;
 import io.swagger.annotations.*;
 import org.springframework.http.MediaType;
@@ -8,8 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/order-books")
@@ -25,29 +24,33 @@ public class OrderBookController {
     @GetMapping()
     @ApiOperation(
             value = "Finds all Order Books",
-            response = OrderBook.class,
+            response = OrderBooksResource.class,
             responseContainer = "List",
             notes = "It fetches both open and closed books")
     @ApiResponses(value = {
             @ApiResponse(code = 401, message = "never happens"),
             @ApiResponse(code = 403, message = "never happens"),
             @ApiResponse(code = 404, message = "never happens")})
-    public List<OrderBook> getOrderBooks() {
-        return marketService.getOrderBooks();
+    public OrderBooksResource getOrderBooks() {
+        return new OrderBooksResource(marketService.getOrderBooks());
     }
 
     @GetMapping(value = "/{id}")
     @ApiOperation(
             value = "Finds one Order Book by id",
-            response = OrderBook.class,
+            response = OrderBookResource.class,
             notes = "It fetches a single order book or throws 404 if not found")
     @ApiResponses(value = {
             @ApiResponse(code = 401, message = "never happens"),
             @ApiResponse(code = 403, message = "never happens"),
             @ApiResponse(code = 404, message = "Resource not found!")})
-    public OrderBook getOrderBook(
+    public OrderBookResource getOrderBook(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String id) {
-        return marketService.getOrderBookById(id);
+        return new OrderBookResource(marketService.getOrderBookById(id));
     }
+
+//    public ResponseEntity<Void> closeOrderBook ()
+
+
 }
