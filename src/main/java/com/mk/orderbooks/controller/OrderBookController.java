@@ -111,6 +111,7 @@ public class OrderBookController {
             notes = "New order can be added to open order book only.")
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Created", response = OrderResource.class),
+            @ApiResponse(code = 400, message = "Validation message"),
             @ApiResponse(code = 412, message = "This order book is closed!")})
     public ResponseEntity<OrderResource> addOrder(
             @ApiParam(value = "Unique ID of an order book", required = true)
@@ -132,6 +133,7 @@ public class OrderBookController {
             notes = "New execution can be added to closed order book only.")
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Created", response = ExecutionResource.class),
+            @ApiResponse(code = 400, message = "Validation message"),
             @ApiResponse(code = 412, message = "This order book is open!")})
     public ResponseEntity<ExecutionResource> addExecution(
             @ApiParam(value = "Unique ID of an order book", required = true)
