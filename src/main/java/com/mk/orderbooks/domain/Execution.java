@@ -10,5 +10,5 @@ import java.math.BigDecimal;
 public class Execution {
 
     private int quantity;
-    private BigDecimal price;
+    private final BigDecimal price = BigDecimal.valueOf(50L);
 }

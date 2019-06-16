@@ -36,7 +36,7 @@ public class OrderBookController {
             responseContainer = "List",
             notes = "It fetches both open and closed books")
     @ApiResponses(value = {
-            @ApiResponse(code = 404, message = "security not implemented")})
+            @ApiResponse(code = 404, message = "Resource not found!")})
     public OrderBooksResource getOrderBooks() {
         return new OrderBooksResource(marketService.getOrderBooks());
     }
