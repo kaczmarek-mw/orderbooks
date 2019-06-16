@@ -1,13 +1,14 @@
 package com.mk.orderbooks;
 
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+import static org.springframework.boot.SpringApplication.run;
 
 @SpringBootApplication
 public class OrderbooksApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(OrderbooksApplication.class, args);
+        run(OrderbooksApplication.class, args);
     }
 
 

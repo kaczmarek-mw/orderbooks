@@ -1,12 +1,10 @@
 package com.mk.orderbooks.controller;
 
+import com.mk.orderbooks.controller.request.NewExecutionRequest;
 import com.mk.orderbooks.controller.request.NewOrderBookRequest;
 import com.mk.orderbooks.controller.request.NewOrderRequest;
-import com.mk.orderbooks.hateoas.OrderBookResource;
-import com.mk.orderbooks.hateoas.OrderBooksResource;
-import com.mk.orderbooks.hateoas.OrderResource;
-import com.mk.orderbooks.hateoas.OrdersResource;
-import com.mk.orderbooks.service.MarketService;
+import com.mk.orderbooks.hateoas.*;
+import com.mk.orderbooks.service.OrderBookService;
 import io.swagger.annotations.*;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +14,7 @@ import javax.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import static org.springframework.http.ResponseEntity.created;
 import static org.springframework.http.ResponseEntity.ok;
 
 @RestController
@@ -23,10 +22,10 @@ import static org.springframework.http.ResponseEntity.ok;
 @Api(value = "/order-books", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 public class OrderBookController {
 
-    private final MarketService marketService;
+    private final OrderBookService orderBookService;
 
-    public OrderBookController(MarketService marketService) {
-        this.marketService = marketService;
+    public OrderBookController(OrderBookService orderBookService) {
+        this.orderBookService = orderBookService;
     }
 
     @GetMapping()
@@ -38,7 +37,7 @@ public class OrderBookController {
     @ApiResponses(value = {
             @ApiResponse(code = 404, message = "Resource not found!")})
     public OrderBooksResource getOrderBooks() {
-        return new OrderBooksResource(marketService.getOrderBooks());
+        return new OrderBooksResource(orderBookService.getOrderBooks());
     }
 
     @GetMapping(value = "/{id}")
@@ -51,7 +50,7 @@ public class OrderBookController {
     public OrderBookResource getOrderBook(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String id) {
-        return new OrderBookResource(marketService.getOrderBookById(id));
+        return new OrderBookResource(orderBookService.getOrderBook(id));
     }
 
     @PutMapping(value = "/{id}")
@@ -64,7 +63,7 @@ public class OrderBookController {
     public ResponseEntity<OrderBookResource> closeOrderBook(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String id) {
-        OrderBookResource orderBookResource = new OrderBookResource(marketService.closeOrderBook(id));
+        OrderBookResource orderBookResource = new OrderBookResource(orderBookService.closeOrderBook(id));
         return ok().body(orderBookResource);
     }
 
@@ -78,8 +77,8 @@ public class OrderBookController {
     public ResponseEntity<OrderBookResource> openOrderBook(
             @ApiParam(value = "New order book data", required = true)
             @Valid @RequestBody NewOrderBookRequest newOrderBookRequest) throws URISyntaxException {
-        OrderBookResource orderBookResource = new OrderBookResource(marketService.openOrderBook(newOrderBookRequest.getFinancialInstrument()));
-        return ResponseEntity.created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
+        OrderBookResource orderBookResource = new OrderBookResource(orderBookService.openOrderBook(newOrderBookRequest.getFinancialInstrument()));
+        return created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
     }
 
     @GetMapping(value = "/{orderBookId}/orders")
@@ -90,7 +89,7 @@ public class OrderBookController {
     public OrdersResource getOrders(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String orderBookId) {
-        return new OrdersResource(orderBookId, marketService.getOrdersByOrderBookId(orderBookId));
+        return new OrdersResource(orderBookId, orderBookService.getOrders(orderBookId));
     }
 
     @GetMapping(value = "/{orderBookId}/orders/{orderId}")
@@ -103,7 +102,7 @@ public class OrderBookController {
             @PathVariable String orderBookId,
             @ApiParam(value = "Unique ID of an order ", required = true)
             @PathVariable String orderId) {
-        return new OrderResource(orderBookId, marketService.getOrderByOrderBookIdAndOrderId(orderBookId, orderId));
+        return new OrderResource(orderBookId, orderBookService.getOrder(orderBookId, orderId));
     }
 
     @PostMapping(value = "/{orderBookId}/orders")
@@ -111,21 +110,63 @@ public class OrderBookController {
             value = "Adds new order to the order book",
             notes = "New order can be added to open order book only.")
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Created", response = NewOrderRequest.class),
+            @ApiResponse(code = 201, message = "Created", response = OrderResource.class),
             @ApiResponse(code = 412, message = "This order book is closed!")})
     public ResponseEntity<OrderResource> addOrder(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String orderBookId,
             @ApiParam(value = "New order data", required = true)
             @Valid @RequestBody NewOrderRequest newOrderRequest) throws URISyntaxException {
-        OrderResource orderBookResource = new OrderResource(orderBookId,
-                marketService.addOrder(
+        OrderResource orderResource = new OrderResource(orderBookId,
+                orderBookService.addOrder(
                         orderBookId,
                         newOrderRequest.getQuantity(),
                         newOrderRequest.isMarketOrder(),
                         newOrderRequest.getPrice()));
-        return ResponseEntity.created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
+        return created(new URI(orderResource.getLink("self").getHref())).body(orderResource);
     }
 
+    @PostMapping(value = "/{orderBookId}/executions")
+    @ApiOperation(
+            value = "Adds new execution to the order book",
+            notes = "New execution can be added to closed order book only.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Created", response = ExecutionResource.class),
+            @ApiResponse(code = 412, message = "This order book is open!")})
+    public ResponseEntity<ExecutionResource> addExecution(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId,
+            @ApiParam(value = "New execution data", required = true)
+            @Valid @RequestBody NewExecutionRequest newExecutionRequest) throws URISyntaxException {
+        ExecutionResource executionResource = new ExecutionResource(orderBookId,
+                orderBookService.addExecution(
+                        orderBookId,
+                        newExecutionRequest.getQuantity()));
+        return created(new URI(executionResource.getLink("self").getHref())).body(executionResource);
+    }
+
+    @GetMapping(value = "/{orderBookId}/executions")
+    @ApiOperation(
+            value = "Finds list of all executions for given book")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "Resource not found!")})
+    public ExecutionsResource getExecutions(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId) {
+        return new ExecutionsResource(orderBookId, orderBookService.getExecutions(orderBookId));
+    }
+
+    @GetMapping(value = "/{orderBookId}/executions/{executionId}")
+    @ApiOperation(
+            value = "Finds particular execution for given order book")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "Resource not found!")})
+    public ExecutionResource getExecution(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId,
+            @ApiParam(value = "Unique ID of an execution ", required = true)
+            @PathVariable String executionId) {
+        return new ExecutionResource(orderBookId, orderBookService.getExecution(orderBookId, executionId));
+    }
 
 }

@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @Builder
 public class Execution {
 
+    private final String id;
     private int quantity;
     private final BigDecimal price = BigDecimal.valueOf(50L);
 }

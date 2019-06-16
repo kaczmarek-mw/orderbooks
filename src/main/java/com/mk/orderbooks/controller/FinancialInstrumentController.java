@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Api(value = "/financial-instruments", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 public class FinancialInstrumentController {
 
-    public FinancialInstrumentController() {
-    }
-
     @GetMapping()
     @ApiOperation(
             value = "Finds all financial instruments",
