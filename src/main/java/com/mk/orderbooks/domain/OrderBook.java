@@ -12,7 +12,6 @@ public class OrderBook {
 
     private final String id;
     private boolean isOpen;
-    private boolean isExecuted;
     // The requirement said that financialInstrument belongs to Order, but it made more sense to me that it belongs here.
     private final FinancialInstrument financialInstrument;
     private final Collection<Order> orders;

@@ -3,6 +3,9 @@ package com.mk.orderbooks.controller;
 import com.mk.orderbooks.controller.request.NewExecutionRequest;
 import com.mk.orderbooks.controller.request.NewOrderBookRequest;
 import com.mk.orderbooks.controller.request.NewOrderRequest;
+import com.mk.orderbooks.domain.mutable.MutableOrderBook;
+import com.mk.orderbooks.domain.processor.OrderBookProcessor;
+import com.mk.orderbooks.domain.processor.OrderBookStatisticsProcessor;
 import com.mk.orderbooks.hateoas.*;
 import com.mk.orderbooks.service.OrderBookService;
 import io.swagger.annotations.*;
@@ -23,9 +26,13 @@ import static org.springframework.http.ResponseEntity.ok;
 public class OrderBookController {
 
     private final OrderBookService orderBookService;
+    private final OrderBookProcessor orderBookProcessor;
+    private final OrderBookStatisticsProcessor orderBookStatisticsProcessor;
 
-    public OrderBookController(OrderBookService orderBookService) {
+    public OrderBookController(OrderBookService orderBookService, OrderBookProcessor orderBookProcessor, OrderBookStatisticsProcessor orderBookStatisticsProcessor) {
         this.orderBookService = orderBookService;
+        this.orderBookProcessor = orderBookProcessor;
+        this.orderBookStatisticsProcessor = orderBookStatisticsProcessor;
     }
 
     @GetMapping()
@@ -40,7 +47,7 @@ public class OrderBookController {
         return new OrderBooksResource(orderBookService.getOrderBooks());
     }
 
-    @GetMapping(value = "/{id}")
+    @GetMapping(value = "/{orderBookId}")
     @ApiOperation(
             value = "Finds one Order Book by id",
             response = OrderBookResource.class,
@@ -49,11 +56,11 @@ public class OrderBookController {
             @ApiResponse(code = 404, message = "Resource not found!")})
     public OrderBookResource getOrderBook(
             @ApiParam(value = "Unique ID of an order book", required = true)
-            @PathVariable String id) {
-        return new OrderBookResource(orderBookService.getOrderBook(id));
+            @PathVariable String orderBookId) {
+        return new OrderBookResource(orderBookService.getOrderBook(orderBookId));
     }
 
-    @PutMapping(value = "/{id}")
+    @PutMapping(value = "/{orderBookId}")
     @ApiOperation(
             value = "Closes an order book",
             notes = "Closes given order book after which executions will be accepted.")
@@ -62,8 +69,8 @@ public class OrderBookController {
             @ApiResponse(code = 404, message = "Resource not found!")})
     public ResponseEntity<OrderBookResource> closeOrderBook(
             @ApiParam(value = "Unique ID of an order book", required = true)
-            @PathVariable String id) {
-        OrderBookResource orderBookResource = new OrderBookResource(orderBookService.closeOrderBook(id));
+            @PathVariable String orderBookId) {
+        OrderBookResource orderBookResource = new OrderBookResource(orderBookService.closeOrderBook(orderBookId));
         return ok().body(orderBookResource);
     }
 
@@ -79,6 +86,30 @@ public class OrderBookController {
             @Valid @RequestBody NewOrderBookRequest newOrderBookRequest) throws URISyntaxException {
         OrderBookResource orderBookResource = new OrderBookResource(orderBookService.openOrderBook(newOrderBookRequest.getFinancialInstrument()));
         return created(new URI(orderBookResource.getLink("self").getHref())).body(orderBookResource);
+    }
+
+    @GetMapping(value = "/{orderBookId}/statistics")
+    @ApiOperation(
+            value = "Finds list of all orders for given book")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "Resource not found!")})
+    public OrderBookStatisticsResource getOrderBookStatistics(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId) {
+        return new OrderBookStatisticsResource(orderBookId, orderBookStatisticsProcessor.collectStatistics(orderBookService.getOrderBook(orderBookId).toMutable()));
+    }
+
+    @GetMapping(value = "/{orderBookId}/statistics-after-execution")
+    @ApiOperation(
+            value = "Runs all stored executions against all stored orders and returns statistics after execution.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "Resource not found!")})
+    public OrderBookStatisticsResource execute(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId) {
+        MutableOrderBook mutableOrderBook = orderBookService.getOrderBook(orderBookId).toMutable();
+        orderBookProcessor.processBook(mutableOrderBook);
+        return new OrderBookStatisticsResource(orderBookId, orderBookStatisticsProcessor.collectStatistics(mutableOrderBook));
     }
 
     @GetMapping(value = "/{orderBookId}/orders")

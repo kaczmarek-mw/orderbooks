@@ -11,11 +11,12 @@ import java.util.List;
 
 import static java.lang.Math.floor;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 @Service
 public class OrderBookProcessor {
 
-    public boolean runExecutions(MutableOrderBook orderBook) {
+    public boolean processBook(MutableOrderBook orderBook) {
         if (orderBook == null) {
             throw new IllegalStateException("Order book is null");
         }
@@ -24,6 +25,9 @@ public class OrderBookProcessor {
         }
         if (orderBook.getOrders().isEmpty()) {
             throw new IllegalArgumentException("There are no orders in the order book");
+        }
+        if (orderBook.isOpen()) {
+            throw new IllegalStateException("Order book is still open");
         }
 
         getOpenExecutions(orderBook.getExecutions()).forEach(execution -> distributeExecution(getOpenOrders(orderBook.getOrders()), execution));
@@ -37,14 +41,16 @@ public class OrderBookProcessor {
             Collection<MutableOrder> remainingValidOrders = getValidOrders(orders, execution.getPrice());
             final int evenDistribution = getEvenDistribution(execution.getQuantity(), remainingValidOrders.size());
             remainingValidOrders.forEach(order -> {
-                int minimalDistribution = Math.max(evenDistribution, 1);
-                executeOrder(order, execution, minimalDistribution);
+                if(execution.getQuantity() > 0) {
+                    int minimalDistribution = Math.max(evenDistribution, 1);
+                    executeOrder(order, execution, minimalDistribution);
+                }
             });
         }
     }
 
     void executeOrder(MutableOrder order, MutableExecution execution, int purchase) {
-        if(purchase > execution.getQuantity()) {
+        if (purchase > execution.getQuantity()) {
             throw new IllegalStateException("Unable to execute this purchase");
         }
         execution.substractQuantity(purchase - order.substractQuantity(purchase));
@@ -58,8 +64,16 @@ public class OrderBookProcessor {
         return orders.stream().filter(order -> order.getQuantity() > 0).collect(toList());
     }
 
+    List<MutableOrder> getValidOrders(MutableOrderBook orderBook) {
+        return orderBook.getExecutions().stream().map(MutableExecution::getPrice).collect(toSet()).stream()
+                .flatMap(executionPrice -> getValidOrders(orderBook.getOrders(), executionPrice).stream()).collect(toList());
+    }
+
     List<MutableOrder> getValidOrders(Collection<MutableOrder> orders, BigDecimal executionPrice) {
-        return getOpenOrders(orders).stream().filter(order -> order.isMarketOrder() || order.getPrice().compareTo(executionPrice) < 0).collect(toList());
+        return getOpenOrders(orders).stream().filter(order -> {
+            order.setValid(order.isMarketOrder() || order.getPrice().compareTo(executionPrice) < 0);
+            return order.isValid();
+        }).collect(toList());
     }
 
     int getEvenDistribution(int executionQuantity, int ordersCount) {

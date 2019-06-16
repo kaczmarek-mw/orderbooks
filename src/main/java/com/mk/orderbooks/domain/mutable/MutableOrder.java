@@ -22,6 +22,7 @@ public class MutableOrder {
     private Instant entryTime;
     private boolean isMarketOrder;
     private BigDecimal price;
+    private boolean isValid;
 
     public int substractQuantity(int quantity) {
         int possibleQuant = Math.min(this.quantity, quantity);

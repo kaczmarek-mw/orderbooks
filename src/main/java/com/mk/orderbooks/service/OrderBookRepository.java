@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static java.math.BigDecimal.TEN;
+import static java.math.BigDecimal.valueOf;
 import static java.time.Instant.now;
 import static java.util.Arrays.asList;
 import static java.util.UUID.randomUUID;
@@ -31,17 +32,46 @@ public class OrderBookRepository {
     private void init() {
         orderBooks.add(OrderBook.builder()
                 .id(randomUUID().toString())
-                .isOpen(true)
+                .isOpen(false)
                 .financialInstrument(FinancialInstrument.BTC)
-                .orders(new ConcurrentLinkedQueue<>(asList(Order.builder()
-                        .id(randomUUID().toString())
-                        .isMarketOrder(false)
-                        .price(TEN)
-                        .quantity(5)
-                        .entryTime(now())
-                        .build()))
+                .orders(new ConcurrentLinkedQueue<>(asList(
+                        Order.builder()
+                                .id(randomUUID().toString())
+                                .isMarketOrder(false)
+                                .price(TEN)
+                                .quantity(5)
+                                .entryTime(now())
+                                .build(),
+                        Order.builder()
+                                .id(randomUUID().toString())
+                                .isMarketOrder(false)
+                                .price(valueOf(30L))
+                                .quantity(15)
+                                .entryTime(now())
+                                .build(),
+                        Order.builder()
+                                .id(randomUUID().toString())
+                                .isMarketOrder(false)
+                                .price(TEN)
+                                .quantity(12)
+                                .entryTime(now())
+                                .build(),
+                        Order.builder()
+                                .id(randomUUID().toString())
+                                .isMarketOrder(true)
+                                .quantity(15)
+                                .entryTime(now())
+                                .build()))
                 )
-                .executions(new ConcurrentLinkedQueue<>())
+                .executions(new ConcurrentLinkedQueue<>(asList(
+                        Execution.builder()
+                                .id(randomUUID().toString())
+                                .quantity(18)
+                                .build(),
+                        Execution.builder()
+                                .id(randomUUID().toString())
+                                .quantity(4)
+                                .build())))
                 .build());
     }
 

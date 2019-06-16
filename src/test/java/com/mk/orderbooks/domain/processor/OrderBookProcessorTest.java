@@ -76,7 +76,7 @@ class OrderBookProcessorTest {
     @Test
     void runsOrderBookExecutions() {
         // WHEN
-        boolean executed = orderBookProcessor.runExecutions(orderBook);
+        boolean executed = orderBookProcessor.processBook(orderBook);
 
         // EXPECT
         assertEquals(0, orderBookProcessor.getOpenExecutions(orderBook.getExecutions()).size());
@@ -90,7 +90,7 @@ class OrderBookProcessorTest {
     void runsOrderBookExecutionsAndThrowsExceptionIfOrderBookNull() {
 
         // EXPECT
-        assertThrows(IllegalStateException.class, () -> orderBookProcessor.runExecutions(null));
+        assertThrows(IllegalStateException.class, () -> orderBookProcessor.processBook(null));
     }
 
     @Test
@@ -107,7 +107,7 @@ class OrderBookProcessorTest {
                 .build().toMutable();
 
         // EXPECT
-        assertThrows(IllegalArgumentException.class, () -> orderBookProcessor.runExecutions(orderBook));
+        assertThrows(IllegalArgumentException.class, () -> orderBookProcessor.processBook(orderBook));
         assertEquals(33, execution.getQuantity());
     }
 
@@ -125,7 +125,7 @@ class OrderBookProcessorTest {
                 .build().toMutable();
 
         // EXPECT
-        assertThrows(IllegalArgumentException.class, () -> orderBookProcessor.runExecutions(orderBook));
+        assertThrows(IllegalArgumentException.class, () -> orderBookProcessor.processBook(orderBook));
         assertEquals(10, order.getQuantity());
     }
 
@@ -207,6 +207,14 @@ class OrderBookProcessorTest {
         // EXPECT
         assertEquals(2, orderBookProcessor.getOpenExecutions(executions).size());
     }
+
+    @Test
+    void returnsRemainingValidOrdersForOrderBook() {
+
+        // EXPECT
+        assertEquals(3, orderBookProcessor.getValidOrders(orderBook).size());
+    }
+
 
     @Test
     void returnsRemainingValidOrders() {
