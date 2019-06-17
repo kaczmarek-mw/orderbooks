@@ -97,7 +97,7 @@ public class OrderBookController {
 
     @GetMapping(value = "/{orderBookId}/statistics")
     @ApiOperation(
-            value = "Finds list of all orders for given book")
+            value = "Shows statistics for a particular order.")
     @ApiResponses(value = {
             @ApiResponse(code = 404, message = "Resource not found!")})
     public OrderBookStatisticsResource getOrderBookStatistics(
@@ -108,9 +108,10 @@ public class OrderBookController {
 
     @GetMapping(value = "/{orderBookId}/statistics-after-execution")
     @ApiOperation(
-            value = "Runs all stored executions against all stored orders and returns statistics after execution.")
+            value = "Runs all stored executions against all stored orders and returns statistics after execution. Must be run on a closed book!")
     @ApiResponses(value = {
-            @ApiResponse(code = 404, message = "Resource not found!")})
+            @ApiResponse(code = 404, message = "Resource not found!"),
+            @ApiResponse(code = 412, message = "This order book is still open!")})
     public OrderBookStatisticsResource execute(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String orderBookId) {
@@ -145,9 +146,10 @@ public class OrderBookController {
 
     @GetMapping(value = "/{orderBookId}/orders/{orderId}/statistics-after-execution")
     @ApiOperation(
-            value = "Finds particular order for given order book")
+            value = "Shows statistics for a particular order. Must be run on a closed book!")
     @ApiResponses(value = {
-            @ApiResponse(code = 404, message = "Resource not found!")})
+            @ApiResponse(code = 404, message = "Resource not found!"),
+            @ApiResponse(code = 412, message = "This order book is still open!")})
     public OrderStatisticsResource getOrderStatistics(
             @ApiParam(value = "Unique ID of an order book", required = true)
             @PathVariable String orderBookId,
@@ -160,7 +162,7 @@ public class OrderBookController {
 
     @PostMapping(value = "/{orderBookId}/orders")
     @ApiOperation(
-            value = "Adds new order to the order book",
+            value = "Adds new order to the order book. Must be run on an open book!",
             notes = "New order can be added to open order book only.")
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Created", response = OrderResource.class),
@@ -182,7 +184,7 @@ public class OrderBookController {
 
     @PostMapping(value = "/{orderBookId}/executions")
     @ApiOperation(
-            value = "Adds new execution to the order book",
+            value = "Adds new execution to the order book. Must be run on a closed book!",
             notes = "New execution can be added to closed order book only.")
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "Created", response = ExecutionResource.class),
