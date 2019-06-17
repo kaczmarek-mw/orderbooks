@@ -1,4 +1,4 @@
-package com.mk.orderbooks;
+package com.mk.orderbooks.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +13,7 @@ import static java.util.stream.Stream.of;
 @EnableSwagger2
 public class SwaggerConfig {
 
-    private String[] acceptedPaths = {"order-books", "financial-instruments"};
+    private String[] acceptedPaths = {"order-books", "financial-instruments", "graceful"};
 
     @Bean
     public Docket api() {
@@ -21,7 +21,7 @@ public class SwaggerConfig {
                 .useDefaultResponseMessages(false)
                 .select()
                 .apis(RequestHandlerSelectors.any())
-                .paths(path -> of(acceptedPaths).filter(acceptedPath -> path != null && path.contains(acceptedPath)).findFirst().isPresent())
+                .paths(path -> of(acceptedPaths).anyMatch(acceptedPath -> path != null && path.contains(acceptedPath)))
                 .build();
     }
 }

@@ -53,7 +53,7 @@ public class OrderBookProcessor {
         if (purchase > execution.getQuantity()) {
             throw new IllegalStateException("Unable to execute this purchase");
         }
-        execution.substractQuantity(purchase - order.substractQuantity(purchase));
+        execution.subtractQuantity(purchase - order.subtractQuantity(purchase));
     }
 
     List<MutableExecution> getOpenExecutions(Collection<MutableExecution> executions) {

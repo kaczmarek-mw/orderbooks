@@ -18,7 +18,7 @@ public class MutableExecution {
     private int quantity;
     private BigDecimal price;
 
-    public void substractQuantity(int quantity) {
+    public void subtractQuantity(int quantity) {
         int possibleQuant = Math.min(this.quantity, quantity);
         this.quantity -= possibleQuant;
     }

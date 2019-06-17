@@ -24,7 +24,7 @@ public class MutableOrder {
     private BigDecimal price;
     private boolean isValid;
 
-    public int substractQuantity(int quantity) {
+    public int subtractQuantity(int quantity) {
         int possibleQuant = Math.min(this.quantity, quantity);
         this.quantity -= possibleQuant;
         return quantity - possibleQuant;
