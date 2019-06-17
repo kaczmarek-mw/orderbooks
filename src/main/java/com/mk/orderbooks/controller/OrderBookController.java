@@ -6,6 +6,7 @@ import com.mk.orderbooks.controller.request.NewOrderRequest;
 import com.mk.orderbooks.domain.mutable.MutableOrderBook;
 import com.mk.orderbooks.domain.processor.OrderBookProcessor;
 import com.mk.orderbooks.domain.processor.OrderBookStatisticsProcessor;
+import com.mk.orderbooks.domain.processor.OrderStatisticsProcessor;
 import com.mk.orderbooks.hateoas.*;
 import com.mk.orderbooks.service.OrderBookService;
 import io.swagger.annotations.*;
@@ -28,11 +29,17 @@ public class OrderBookController {
     private final OrderBookService orderBookService;
     private final OrderBookProcessor orderBookProcessor;
     private final OrderBookStatisticsProcessor orderBookStatisticsProcessor;
+    private final OrderStatisticsProcessor orderStatisticsProcessor;
 
-    public OrderBookController(OrderBookService orderBookService, OrderBookProcessor orderBookProcessor, OrderBookStatisticsProcessor orderBookStatisticsProcessor) {
+    public OrderBookController(
+            OrderBookService orderBookService,
+            OrderBookProcessor orderBookProcessor,
+            OrderBookStatisticsProcessor orderBookStatisticsProcessor,
+            OrderStatisticsProcessor orderStatisticsProcessor) {
         this.orderBookService = orderBookService;
         this.orderBookProcessor = orderBookProcessor;
         this.orderBookStatisticsProcessor = orderBookStatisticsProcessor;
+        this.orderStatisticsProcessor = orderStatisticsProcessor;
     }
 
     @GetMapping()
@@ -134,6 +141,21 @@ public class OrderBookController {
             @ApiParam(value = "Unique ID of an order ", required = true)
             @PathVariable String orderId) {
         return new OrderResource(orderBookId, orderBookService.getOrder(orderBookId, orderId));
+    }
+
+    @GetMapping(value = "/{orderBookId}/orders/{orderId}/statistics-after-execution")
+    @ApiOperation(
+            value = "Finds particular order for given order book")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "Resource not found!")})
+    public OrderStatisticsResource getOrderStatistics(
+            @ApiParam(value = "Unique ID of an order book", required = true)
+            @PathVariable String orderBookId,
+            @ApiParam(value = "Unique ID of an order ", required = true)
+            @PathVariable String orderId) {
+        MutableOrderBook mutableOrderBook = orderBookService.getOrderBook(orderBookId).toMutable();
+        orderBookProcessor.processBook(mutableOrderBook);
+        return new OrderStatisticsResource(orderBookId, orderId, orderStatisticsProcessor.collectStatistics(mutableOrderBook, orderBookService.getOrder(orderBookId, orderId)));
     }
 
     @PostMapping(value = "/{orderBookId}/orders")

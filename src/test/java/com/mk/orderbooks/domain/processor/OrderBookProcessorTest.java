@@ -76,6 +76,7 @@ class OrderBookProcessorTest {
     @Test
     void runsOrderBookExecutions() {
         // WHEN
+        orderBook.setOpen(false);
         boolean executed = orderBookProcessor.processBook(orderBook);
 
         // EXPECT
@@ -85,6 +86,12 @@ class OrderBookProcessorTest {
         assertTrue(executed);
     }
 
+    @Test
+    void runsOrderBookExecutionsOnOpenBookAndThrowsException() {
+
+        // EXPECT
+        assertThrows(IllegalStateException.class, () -> orderBookProcessor.processBook(orderBook));
+    }
 
     @Test
     void runsOrderBookExecutionsAndThrowsExceptionIfOrderBookNull() {
